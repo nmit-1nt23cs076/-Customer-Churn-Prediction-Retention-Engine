@@ -25,7 +25,7 @@ from preprocess import ChurnFeatureEngineer, prepare_data
 optuna.logging.set_verbosity(optuna.logging.WARNING)
 
 
-def run_optuna_tuning_lgb(X_train: np.ndarray, y_train: np.ndarray, X_val: np.ndarray, y_val: np.ndarray, n_trials: int = 25) -> dict:
+def run_optuna_tuning_lgb(X_train: np.ndarray, y_train: np.ndarray, X_val: np.ndarray, y_val: np.ndarray, n_trials: int = 5) -> dict:
     """
     Bayesian Hyperparameter Optimization for LightGBM using Optuna.
     """
@@ -101,12 +101,9 @@ def train_and_benchmark(data_path: str = None, models_dir: str = None, use_optun
     X_val_eng = engineer.transform(val_df.drop(columns=["Churn"]))
     X_test_eng = engineer.transform(test_df.drop(columns=["Churn"]))
 
-    # Categorical & Numerical feature definition
-    cat_cols = [
-        c for c in X_train_eng.columns 
-        if X_train_eng[c].dtype == "object" or c in ["Contract", "PaymentMethod", "InternetService"]
-    ]
-    num_cols = [c for c in X_train_eng.columns if c not in cat_cols]
+    # Categorical & Numerical feature definition (robust check)
+    num_cols = [c for c in X_train_eng.columns if pd.api.types.is_numeric_dtype(X_train_eng[c])]
+    cat_cols = [c for c in X_train_eng.columns if c not in num_cols]
 
     from preprocess import build_preprocessor_pipeline
     preprocessor = build_preprocessor_pipeline(num_cols, cat_cols)
@@ -147,7 +144,7 @@ def train_and_benchmark(data_path: str = None, models_dir: str = None, use_optun
     # 5. Hyperparameter Optimization via Optuna for Winning Model
     best_params = {}
     if use_optuna:
-        best_params = run_optuna_tuning_lgb(X_train_res, y_train_res, X_val_proc, y_val, n_trials=15)
+        best_params = run_optuna_tuning_lgb(X_train_res, y_train_res, X_val_proc, y_val, n_trials=5)
         final_model = lgb.LGBMClassifier(**best_params, random_state=42, verbose=-1)
     else:
         final_model = lgb_model

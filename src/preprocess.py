@@ -148,12 +148,12 @@ def prepare_data(
     engineer = ChurnFeatureEngineer()
     X_engineered = engineer.transform(X_raw)
 
-    # Separate column types
-    categorical_cols = [
+    # Separate column types robustly
+    numeric_cols = [
         col for col in X_engineered.columns 
-        if X_engineered[col].dtype == "object" or col in ["Contract", "PaymentMethod", "InternetService"]
+        if pd.api.types.is_numeric_dtype(X_engineered[col])
     ]
-    numeric_cols = [col for col in X_engineered.columns if col not in categorical_cols]
+    categorical_cols = [col for col in X_engineered.columns if col not in numeric_cols]
 
     # Step 2: Fit-transform Preprocessor
     preprocessor = build_preprocessor_pipeline(numeric_cols, categorical_cols)
