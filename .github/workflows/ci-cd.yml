@@ -1,0 +1,81 @@
+name: CI/CD Pipeline - Churn Prediction Engine
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Lint & Automated Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install System Libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgomp1
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Code Quality & Linting (flake8)
+        run: |
+          # Stop build on syntax errors or undefined names
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          # Warning check for complexity
+          flake8 . --count --exit-zero --max-complexity=15 --max-line-length=127 --statistics
+
+      - name: Run Test Suite (pytest)
+        run: |
+          pytest tests/ -v --tb=short
+
+  docker-build:
+    name: Build & Verify Production Docker Image
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Container Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: customer-churn-engine:latest
+
+  deploy-render:
+    name: Trigger Cloud Deployment (Render)
+    needs: [test, docker-build]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger Webhook (if configured)
+        env:
+          DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -n "$DEPLOY_HOOK" ]; then
+            echo "Triggering Render auto-deployment..."
+            curl -X POST "$DEPLOY_HOOK"
+            echo "Deploy hook sent successfully."
+          else
+            echo "RENDER_DEPLOY_HOOK_URL secret not set. Skipping webhook (Render auto-deploy on git push will handle it)."
+          fi

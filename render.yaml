@@ -1,0 +1,12 @@
+# Render Infrastructure-as-Code Blueprint
+services:
+  - type: web
+    name: customer-churn-engine
+    runtime: docker
+    plan: free
+    region: oregon
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: 10000

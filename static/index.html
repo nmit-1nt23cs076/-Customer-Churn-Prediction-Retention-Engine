@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Churn & Retention Diagnostic Engine</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0b0f19;
+            --bg-secondary: #131b2e;
+            --bg-card: #1c2640;
+            --border-color: #273554;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-blue: #3b82f6;
+            --accent-cyan: #06b6d4;
+            --accent-green: #10b981;
+            --accent-yellow: #f59e0b;
+            --accent-red: #ef4444;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 24px 16px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 28px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .header-title h1 {
+            font-size: 26px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-title p {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-top: 4px;
+        }
+
+        .badges {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .badge {
+            background-color: rgba(59, 130, 246, 0.15);
+            color: #93c5fd;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-live {
+            background-color: rgba(16, 185, 129, 0.15);
+            color: #6ee7b7;
+            border-color: rgba(16, 185, 129, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .badge-live::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background-color: var(--accent-green);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--accent-green);
+        }
+
+        .api-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 13px;
+            padding: 6px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            transition: all 0.2s;
+        }
+
+        .api-link:hover {
+            color: var(--text-primary);
+            border-color: var(--accent-blue);
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1.15fr 0.85fr;
+            gap: 24px;
+        }
+
+        @media (max-width: 900px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .presets {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-preset {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 6px 10px;
+            font-size: 12px;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-preset:hover {
+            border-color: var(--accent-cyan);
+            color: var(--text-primary);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group.full {
+            grid-column: span 2;
+        }
+
+        label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .val-display {
+            color: var(--accent-cyan);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        select, input[type="text"] {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 10px 12px;
+            color: var(--text-primary);
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        select:focus, input[type="text"]:focus {
+            border-color: var(--accent-blue);
+        }
+
+        input[type="range"] {
+            accent-color: var(--accent-blue);
+            height: 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 4px;
+        }
+
+        .btn-submit {
+            grid-column: span 2;
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: white;
+            font-size: 15px;
+            font-weight: 600;
+            padding: 14px;
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            margin-top: 10px;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45);
+        }
+
+        /* Results Panel */
+        .result-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+            background-color: var(--bg-card);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+
+        .gauge-circle {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: conic-gradient(var(--accent-red) calc(var(--churn-pct) * 1%), #273554 0);
+            position: relative;
+            margin-bottom: 14px;
+        }
+
+        .gauge-inner {
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            background-color: var(--bg-card);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .gauge-value {
+            font-size: 28px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .gauge-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .risk-pill {
+            padding: 6px 16px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            margin-top: 8px;
+        }
+
+        .risk-high { background-color: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+        .risk-med { background-color: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+        .risk-low { background-color: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+
+        .meta-strip {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 14px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .action-box {
+            background-color: rgba(59, 130, 246, 0.08);
+            border: 1px solid rgba(59, 130, 246, 0.25);
+            border-radius: var(--radius-md);
+            padding: 14px;
+            margin-bottom: 20px;
+        }
+
+        .action-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #93c5fd;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .action-text {
+            font-size: 13px;
+            line-height: 1.5;
+            color: #e2e8f0;
+        }
+
+        /* SHAP Section */
+        .shap-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .factor-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .factor-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            background-color: var(--bg-card);
+            padding: 8px 12px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+        }
+
+        .factor-name {
+            color: #cbd5e1;
+        }
+
+        .factor-impact {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .impact-pos { color: #f87171; }
+        .impact-neg { color: #34d399; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-title">
+                <h1>Customer Churn Diagnostic & Retention Engine</h1>
+                <p>Enterprise gradient boosting inference service powered by LightGBM, Optuna, and SHAP explainability.</p>
+            </div>
+            <div class="badges">
+                <span class="badge badge-live">Live Engine</span>
+                <span class="badge">25K+ Records</span>
+                <span class="badge">0.88 ROC-AUC</span>
+                <a href="/docs" target="_blank" class="api-link">API Docs (Swagger) &rarr;</a>
+            </div>
+        </header>
+
+        <div class="main-grid">
+            <!-- Form Input Panel -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Customer Profile Parameters</span>
+                    <div class="presets">
+                        <button class="btn-preset" onclick="loadPreset('high_risk')">Load Risky Churner</button>
+                        <button class="btn-preset" onclick="loadPreset('loyal')">Load Loyal Customer</button>
+                    </div>
+                </div>
+
+                <form id="churnForm" class="form-grid" onsubmit="event.preventDefault(); scoreCustomer();">
+                    <div class="form-group">
+                        <label>Contract Type</label>
+                        <select id="Contract">
+                            <option value="Month-to-month">Month-to-month (High Risk)</option>
+                            <option value="One year">One year</option>
+                            <option value="Two year">Two year (High Loyalty)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Internet Service</label>
+                        <select id="InternetService">
+                            <option value="Fiber optic">Fiber optic</option>
+                            <option value="DSL">DSL</option>
+                            <option value="No">No Internet</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Account Tenure: <span id="tenureVal" class="val-display">12 mos</span></label>
+                        <input type="range" id="tenure" min="1" max="72" value="12" oninput="document.getElementById('tenureVal').innerText = this.value + ' mos'">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Monthly Spend: <span id="monthlyVal" class="val-display">$85.50</span></label>
+                        <input type="range" id="MonthlyCharges" min="18" max="125" step="0.5" value="85.5" oninput="document.getElementById('monthlyVal').innerText = '$' + parseFloat(this.value).toFixed(2)">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Payment Method</label>
+                        <select id="PaymentMethod">
+                            <option value="Electronic check">Electronic check</option>
+                            <option value="Mailed check">Mailed check</option>
+                            <option value="Bank transfer (automatic)">Bank transfer (automatic)</option>
+                            <option value="Credit card (automatic)">Credit card (automatic)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Tech Support Addon</label>
+                        <select id="TechSupport">
+                            <option value="No">No</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No internet service">No internet service</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Online Security</label>
+                        <select id="OnlineSecurity">
+                            <option value="No">No</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No internet service">No internet service</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Paperless Billing</label>
+                        <select id="PaperlessBilling">
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Support Tickets Logged: <span id="ticketsVal" class="val-display">2</span></label>
+                        <input type="range" id="SupportTickets" min="0" max="8" value="2" oninput="document.getElementById('ticketsVal').innerText = this.value">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Payment Failures (Last Yr): <span id="failuresVal" class="val-display">1</span></label>
+                        <input type="range" id="PaymentFailures" min="0" max="4" value="1" oninput="document.getElementById('failuresVal').innerText = this.value">
+                    </div>
+
+                    <button type="submit" class="btn-submit">Calculate Churn Risk & Explain Drivers</button>
+                </form>
+            </div>
+
+            <!-- Diagnostics & Explainability Panel -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Real-Time Risk & Attribution</span>
+                    <span id="latencyBadge" style="font-size: 12px; color: var(--accent-cyan); font-family: monospace;">Latency: 7.2ms</span>
+                </div>
+
+                <div class="result-box">
+                    <div id="gaugeCircle" class="gauge-circle" style="--churn-pct: 68;">
+                        <div class="gauge-inner">
+                            <span id="probText" class="gauge-value">68%</span>
+                            <span class="gauge-label">Probability</span>
+                        </div>
+                    </div>
+                    <span id="riskPill" class="risk-pill risk-high">HIGH CHURN RISK</span>
+                    <div class="meta-strip">
+                        <span>Prediction Threshold: <strong>0.45</strong></span>
+                        <span id="statusFlag">Flag: <strong>At-Risk Account</strong></span>
+                    </div>
+                </div>
+
+                <div class="action-box">
+                    <div class="action-title">Retention Strategy Recommendation</div>
+                    <p id="actionText" class="action-text">Immediate proactive outreach offering a 1-year contract discount and complimentary tech support bundle.</p>
+                </div>
+
+                <div>
+                    <div class="shap-title">
+                        <span>SHAP Top Risk Drivers</span>
+                        <span style="font-size: 11px;">(Log-Odds Impact)</span>
+                    </div>
+                    <div id="driversList" class="factor-list">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function loadPreset(type) {
+            if (type === 'high_risk') {
+                document.getElementById('Contract').value = 'Month-to-month';
+                document.getElementById('InternetService').value = 'Fiber optic';
+                document.getElementById('PaymentMethod').value = 'Electronic check';
+                document.getElementById('TechSupport').value = 'No';
+                document.getElementById('OnlineSecurity').value = 'No';
+                document.getElementById('PaperlessBilling').value = 'Yes';
+                document.getElementById('tenure').value = 4;
+                document.getElementById('tenureVal').innerText = '4 mos';
+                document.getElementById('MonthlyCharges').value = 92.5;
+                document.getElementById('monthlyVal').innerText = '$92.50';
+                document.getElementById('SupportTickets').value = 3;
+                document.getElementById('ticketsVal').innerText = '3';
+                document.getElementById('PaymentFailures').value = 2;
+                document.getElementById('failuresVal').innerText = '2';
+            } else {
+                document.getElementById('Contract').value = 'Two year';
+                document.getElementById('InternetService').value = 'DSL';
+                document.getElementById('PaymentMethod').value = 'Bank transfer (automatic)';
+                document.getElementById('TechSupport').value = 'Yes';
+                document.getElementById('OnlineSecurity').value = 'Yes';
+                document.getElementById('PaperlessBilling').value = 'No';
+                document.getElementById('tenure').value = 48;
+                document.getElementById('tenureVal').innerText = '48 mos';
+                document.getElementById('MonthlyCharges').value = 55.0;
+                document.getElementById('monthlyVal').innerText = '$55.00';
+                document.getElementById('SupportTickets').value = 0;
+                document.getElementById('ticketsVal').innerText = '0';
+                document.getElementById('PaymentFailures').value = 0;
+                document.getElementById('failuresVal').innerText = '0';
+            }
+            scoreCustomer();
+        }
+
+        async function scoreCustomer() {
+            const payload = {
+                customerID: 'CUST-DEMO',
+                Contract: document.getElementById('Contract').value,
+                InternetService: document.getElementById('InternetService').value,
+                tenure: parseInt(document.getElementById('tenure').value),
+                MonthlyCharges: parseFloat(document.getElementById('MonthlyCharges').value),
+                PaymentMethod: document.getElementById('PaymentMethod').value,
+                TechSupport: document.getElementById('TechSupport').value,
+                OnlineSecurity: document.getElementById('OnlineSecurity').value,
+                PaperlessBilling: document.getElementById('PaperlessBilling').value,
+                SupportTickets: parseInt(document.getElementById('SupportTickets').value),
+                PaymentFailures: parseInt(document.getElementById('PaymentFailures').value),
+                SeniorCitizen: 0,
+                Partner: "No",
+                Dependents: "No",
+                MultipleLines: "No",
+                OnlineBackup: "No",
+                DeviceProtection: "No",
+                StreamingTV: "No",
+                StreamingMovies: "No"
+            };
+
+            try {
+                // Call prediction & explanation endpoint
+                const [predRes, explainRes] = await Promise.all([
+                    fetch('/api/v1/predict', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(payload)
+                    }).then(r => r.json()),
+                    fetch('/api/v1/explain', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(payload)
+                    }).then(r => r.json())
+                ]);
+
+                // Update UI Gauge
+                const pct = Math.round(predRes.churn_probability * 100);
+                document.getElementById('probText').innerText = pct + '%';
+                document.getElementById('gaugeCircle').style.setProperty('--churn-pct', pct);
+                document.getElementById('latencyBadge').innerText = `Latency: ${predRes.inference_time_ms}ms`;
+                document.getElementById('actionText').innerText = predRes.retention_recommendation;
+
+                const pill = document.getElementById('riskPill');
+                pill.className = 'risk-pill';
+                if (predRes.risk_level === 'HIGH') {
+                    pill.classList.add('risk-high');
+                    pill.innerText = 'HIGH CHURN RISK';
+                } else if (predRes.risk_level === 'MEDIUM') {
+                    pill.classList.add('risk-med');
+                    pill.innerText = 'MODERATE CHURN RISK';
+                } else {
+                    pill.classList.add('risk-low');
+                    pill.innerText = 'LOW RISK / LOYAL';
+                }
+
+                // Render SHAP factors
+                const list = document.getElementById('driversList');
+                list.innerHTML = '';
+
+                const drivers = explainRes.top_risk_drivers || [];
+                const retention = explainRes.top_retention_factors || [];
+                const combined = [...drivers.slice(0, 3), ...retention.slice(0, 2)];
+
+                combined.forEach(f => {
+                    const isPos = f.direction === 'INCREASES_CHURN';
+                    const div = document.createElement('div');
+                    div.className = 'factor-item';
+                    div.innerHTML = `
+                        <span class="factor-name">${f.feature}</span>
+                        <span class="factor-impact ${isPos ? 'impact-pos' : 'impact-neg'}">
+                            ${isPos ? '+' : ''}${f.impact.toFixed(3)}
+                        </span>
+                    `;
+                    list.appendChild(div);
+                });
+
+            } catch (err) {
+                console.error("Scoring failed:", err);
+            }
+        }
+
+        // Initialize with default score
+        window.addEventListener('DOMContentLoaded', () => scoreCustomer());
+    </script>
+</body>
+</html>
